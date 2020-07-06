@@ -1,0 +1,112 @@
+[
+  {
+    "date": "2020-01-01",
+    "open": 10.00,
+    "close": 12.00,
+    "intraday_gain_loss": 2.00,
+    "intraday_gain_loss_pct": 20.00,
+    "interday_gain_loss": 0.00,
+    "interday_gain_loss_pct": 0.00,
+    "sma_5dy_pct": 0.00,
+    "ema_5dy": 0.00
+  },
+  {
+    "date": "2020-01-02",
+    "open": 12.00,
+    "close": 15.00,
+    "intraday_gain_loss": 3.00,
+    "intraday_gain_loss_pct": 25.000,
+    "interday_gain_loss": 3.00,
+    "interday_gain_loss_pct": 25.000,
+    "sma_5dy_pct": 0.00,
+    "ema_5dy": 0.00
+  },
+  {
+    "date": "2020-01-03",
+    "open": 18.00,
+    "close": 14.00,
+    "intraday_gain_loss": -4.00,
+    "intraday_gain_loss_pct": -22.222,
+    "interday_gain_loss": -1.00,
+    "interday_gain_loss_pct": -6.667,
+    "sma_5dy_pct": 0.00,
+    "ema_5dy": 0.00
+  },
+  {
+    "date": "2020-01-06",
+    "open": 13.00,
+    "close": 17.00,
+    "intraday_gain_loss": 4.00,
+    "intraday_gain_loss_pct": 30.769,
+    "interday_gain_loss": 3.00,
+    "interday_gain_loss_pct": 21.429,
+    "sma_5dy_pct": 0.00,
+    "ema_5dy": 0.00
+  },
+  {
+    "date": "2020-01-07",
+    "open": 17.00,
+    "close": 10.00,
+    "intraday_gain_loss": -7.00,
+    "intraday_gain_loss_pct": -41.176,
+    "interday_gain_loss": -7.00,
+    "interday_gain_loss_pct": -41.176,
+    "sma_5dy_pct": 0.00,
+    "ema_5dy": 0.00
+  },
+  {
+    "date": "2020-01-08",
+    "open": 10.00,
+    "close": 11.00,
+    "intraday_gain_loss": 1.00,
+    "intraday_gain_loss_pct": 10.00,
+    "interday_gain_loss": 1.00,
+    "interday_gain_loss_pct": 10.00,
+    "sma_5dy_pct": 0.000,
+    "ema_5dy": 0.00
+  },
+  {
+    "date": "2020-01-09",
+    "open": 11.00,
+    "close": 14.00,
+    "intraday_gain_loss": 3.00,
+    "intraday_gain_loss_pct": 27.273,
+    "interday_gain_loss": 3.00,
+    "interday_gain_loss_pct": 27.273,
+    "sma_5dy_pct": 0.00,
+    "ema_5dy": 0.00
+  },
+  {
+    "date": "2020-01-10",
+    "open": 14.00,
+    "close": 18.00,
+    "intraday_gain_loss": 4.00,
+    "intraday_gain_loss_pct": 28.571,
+    "interday_gain_loss": 4.00,
+    "interday_gain_loss_pct": 28.571,
+    "sma_5dy_pct": 0.00,
+    "ema_5dy": 0.00
+  },
+  {
+    "date": "2020-01-13",
+    "open": 18.00,
+    "close": 19.00,
+    "intraday_gain_loss": 1.00,
+    "intraday_gain_loss_pct": 5.556,
+    "interday_gain_loss": 1.00,
+    "interday_gain_loss_pct": 5.556,
+    "sma_5dy_pct": 0.00,
+    "ema_5dy": 0.00
+  },
+  {
+    "date": "2020-01-14",
+    "open": 19.00,
+    "close": 20.00,
+    "intraday_gain_loss": 1.00,
+    "intraday_gain_loss_pct": 5.263,
+    "interday_gain_loss": 1.00,
+    "interday_gain_loss_pct": 5.263,
+    "sma_5dy_pct": 0.00,
+    "ema_5dy": 0.00
+  }
+]

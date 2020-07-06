@@ -1,12 +1,13 @@
 import requests
 import json
 import pandas as pd
-import utils
 import time
 import numpy as np
 import logging
 import os
 from datetime import datetime as dt
+
+import invest.dateutils as dateutils
 
 logger = logging.getLogger(__name__)
 sh = logging.StreamHandler()
@@ -23,16 +24,9 @@ class Security:
         self.symbol = symbol
         self.filename = os.path.join(STOCK_DIR, f'{symbol}.json')
         if os.path.exists(self.filename):
-            with open(self.filename) as f:
-                try:
-                    self.data = sorted(json.load(f), key=lambda x: x['date'])
-                    self.latest_date = self.data[-1]['date']
-                except json.decoder.JSONDecodeError:
-                    self.data = None
-                    self.latest_date='1970-01-01'
-                    logger.warning(f"{symbol} cache file is empty. Was it overwritten?")
-
-            logger.info(f"Loaded {symbol} from cache")
+            self.data = pd.read_json(self.filename)
+            self.data.sort_values('date', inplace=True)
+            self.latest_date = self.data.tail(1)['date'].tolist()[0]
         else:
             logger.warning(f"{symbol} not found in cache")
             self.data = None
@@ -46,10 +40,16 @@ class Security:
         """
         df = self.data[['date', 'close']].copy()
         df['interday_gain_loss'] = df['close'].diff(periods=1).fillna(0.00)
-        df['interday_gain_close'] = df['interday_gain_loss'].where(df['interday_gain_loss'] > 0)
-        # Loss values reported as postive for RSI
-        df['interday_loss_close'] = -1 * df['interday_gain_loss'].where(df['interday_gain_loss'] < 0)
-        df[['interday_gain_close', 'interday_loss_close']] = df[['interday_gain_close', 'interday_loss_close']].fillna(0.00)
+        df['interday_gain'] = df['interday_gain_loss'].where(df['interday_gain_loss'] > 0)
+        df['interday_loss'] = -1 * df['interday_gain_loss'].where(df['interday_gain_loss'] < 0)
+        df[['interday_gain', 'interday_loss']] = df[['interday_gain', 'interday_loss']].fillna(0.00)
+
+        df['interday_gain_loss_pct'] = ((df['close'] - df['close'].shift(1))/df['close'].shift(1)) * 100
+        df['interday_gain_pct'] = df['interday_gain_loss_pct'].where(df['interday_gain_loss_pct'] > 0)
+        df['interday_loss_pct'] = -1 * df['interday_gain_loss_pct'].where(df['interday_gain_loss_pct'] < 0)
+        df[['interday_gain_pct', 'interday_loss_pct']] = df[['interday_gain_pct', 'interday_loss_pct']].fillna(0.00)
+        df[['interday_gain_loss_pct', 'interday_gain_pct',
+            'interday_loss_pct']] = df[['interday_gain_loss_pct', 'interday_gain_pct', 'interday_loss_pct']].fillna(0.00)
         df.drop(columns=['close'], inplace=True)
         return df
 
@@ -61,9 +61,14 @@ class Security:
         """
         df = self.data[['date', 'open', 'close']].copy()
         df['intraday_gain_loss'] = df['close'] - df['open']
-        df['intraday_gain_close'] = df['intraday_gain_loss'].where(df['intraday_gain_loss'] > 0)
-        df['intraday_loss_close'] = -1 * df['intraday_gain_loss'].where(df['intraday_gain_loss'] < 0)
-        df[['intraday_gain_close', 'intraday_loss_close']] = df[['intraday_gain_close', 'intraday_loss_close']].fillna(0.00)
+        df['intraday_gain'] = df['intraday_gain_loss'].where(df['intraday_gain_loss'] > 0)
+        df['intraday_loss'] = -1 * df['intraday_gain_loss'].where(df['intraday_gain_loss'] < 0)
+        df[['intraday_gain', 'intraday_loss']] = df[['intraday_gain', 'intraday_loss']].fillna(0.00)
+
+        df['intraday_gain_loss_pct'] = ((df['close'] / df['open']) - 1) * 100
+        df['intraday_gain_pct'] = df['intraday_gain_loss_pct'].where(df['intraday_gain_loss_pct'] > 0)
+        df['intraday_loss_pct'] = -1 * df['intraday_gain_loss_pct'].where(df['intraday_gain_loss_pct'] < 0)
+        df[['intraday_gain_pct', 'intraday_loss_pct']] = df[['intraday_gain_pct', 'intraday_loss_pct']].fillna(0.00)
         df.drop(columns=['open', 'close'], inplace=True)
         return df
 
@@ -74,7 +79,8 @@ class Security:
         Returns: A dataframe keyed on the date and a column with an SMA value.
         """
         df = self.get_interday_gain_loss()
-        df[f'sma_close_{period}dy'] = df['interday_gain_loss'].rolling(window=period, min_periods=1).mean()
+        df[f'sma_{period}dy'] = df['interday_gain_loss'].rolling(window=period, min_periods=0).mean()
+        df[f'sma_{period}dy_pct'] = df['interday_gain_loss_pct'].rolling(window=period, min_periods=0).mean()
         df.drop(columns=[c for c in df.columns.values if 'interday_' in c], inplace=True)
         return df
 
@@ -84,9 +90,10 @@ class Security:
         Param period: An integer value describing the window of the moving average
         Returns: A dataframe keyed on the date and a column with an EMA value.
         """
-        df = self.data[['date', 'close']].copy()
-        df[f'ema_close_{period}dy'] = df['close'].ewm(span=period).mean()
-        df.drop('close', inplace=True)
+        df = self.get_interday_gain_loss()
+        df[f'ema_{period}dy'] = df['interday_gain_loss'].ewm(span=period).mean()
+        df[f'ema_{period}dy_pct'] = df['interday_gain_loss_pct'].ewm(span=period).mean()
+        df.drop(columns=[c for c in df.columns.values if 'interday_' in c], inplace=True)
         return df
 
     def get_bollinger_bands(self, period=20, stddev_factor=1, method='SMA'):
@@ -143,8 +150,7 @@ class Security:
                 2: There was nothing to update for the security
         """
         today = dt.now()
-
-        if self.latest_date == dt.strftime(today, '%Y-%m-%d'):
+        if self.latest_date == dt.strftime(dateutils.last_open_date(today), '%Y-%m-%d'):
             logger.info(f"NOP. {self.symbol} up to date")
             return 2
 
@@ -197,7 +203,7 @@ class Security:
                 with open(self.filename) as f:
                     curr_data = json.load(f)
             last_date = dt.strptime(curr_data[-1]['date'], '%Y-%m-%d')
-            for new_date in utils.daterange(last_date, dt.now(), as_generator=True):
+            for new_date in dateutils.daterange(last_date, dt.now(), as_generator=True):
                 try:
                     new_data = \
                         df.loc[df['date'] == dt.strftime(new_date, '%Y-%m-%d')].to_dict(orient='records')[0]
@@ -226,6 +232,7 @@ class Security:
             updated = sorted(updated, key=lambda x: x['updated_at'])
             securities = [u['symbol'] for u in updated][:500]
 
+        logger.info(f"Collected securities list: {', '.join(securities)}")
         for symbol in securities:
             s = Security(symbol)
             failed = 0
@@ -258,6 +265,9 @@ class WatchList:
     def _save(self):
         with open(self.file, 'w+') as f:
             f.write(json.dumps(self._watchlist, indent=4))
+
+    def list(self):
+        return sorted(list(self._watchlist.keys()))
 
     def add(self, security):
         if security in self._watchlist.keys():

@@ -1,7 +1,7 @@
 from datetime import timedelta, datetime
 
 
-def daterange(start_date, end_date, as_generator=False):
+def daterange(start_date: datetime, end_date: datetime, as_generator=False):
     arr = []
     for n in range(int ((end_date - start_date).days)):
         if as_generator:
@@ -22,3 +22,11 @@ def nyse_open(dt: datetime):
     if dt.weekday() >= 5 or dt.strftime('%Y%m%d') in nyse_holidays:
         return False
     return True
+
+
+def last_open_date(dt: datetime):
+    """ Returns the earliest date that the New York Stock Exchange (NYSE) was open since `dt`"""
+    while True:
+        if nyse_open(dt):
+            return dt
+        dt -= timedelta(days=1)
