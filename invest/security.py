@@ -7,7 +7,10 @@ import logging
 import os
 from datetime import datetime as dt
 
-import invest.dateutils as dateutils
+try:
+    import invest.dateutils as dateutils
+except ModuleNotFoundError:
+    import dateutils
 
 logger = logging.getLogger(__name__)
 sh = logging.StreamHandler()
@@ -15,18 +18,18 @@ sh.setFormatter(logging.Formatter('%(asctime)s | %(levelname)s: %(message)s'))
 logger.addHandler(sh)
 logger.setLevel(logging.INFO)
 
-STOCK_DIR = 'data'
-
 
 class Security:
+    STOCK_DIR = 'data'
+
     def __init__(self, symbol: str):
         self.API_URL = 'https://www.alphavantage.co/query'
         self.symbol = symbol
-        self.filename = os.path.join(STOCK_DIR, f'{symbol}.json')
+        self.filename = os.path.join(Security.STOCK_DIR, f'{symbol}.json')
         if os.path.exists(self.filename):
             self.data = pd.read_json(self.filename)
             self.data.sort_values('date', inplace=True)
-            self.latest_date = self.data.tail(1)['date'].tolist()[0]
+            self.latest_date = dt.strftime(self.data.tail(1)['date'].tolist()[0], '%Y-%m-%d')
         else:
             logger.warning(f"{symbol} not found in cache")
             self.data = None
@@ -78,10 +81,22 @@ class Security:
         Param period: An integer value describing the window of the moving average
         Returns: A dataframe keyed on the date and a column with an SMA value.
         """
+        # TODO Make a closing-price variant (Not just gain/loss)
         df = self.get_interday_gain_loss()
         df[f'sma_{period}dy'] = df['interday_gain_loss'].rolling(window=period, min_periods=0).mean()
         df[f'sma_{period}dy_pct'] = df['interday_gain_loss_pct'].rolling(window=period, min_periods=0).mean()
         df.drop(columns=[c for c in df.columns.values if 'interday_' in c], inplace=True)
+        return df
+
+    def get_sma_price(self, period=10):
+        """
+        Calculates a Simple Moving Average (SMA) using price data.
+        Param period: An integer value describing the window of the moving average
+        Returns: A dataframe keyed on the date and a column with an SMA value.
+        """
+        df = self.data[['date', 'close']].copy()
+        df[f'sma_price_{period}dy'] = df['close'].rolling(window=period, min_periods=0).mean()
+        df.drop(columns=['close'], inplace=True)
         return df
 
     def get_ema(self, period=10):
@@ -90,13 +105,14 @@ class Security:
         Param period: An integer value describing the window of the moving average
         Returns: A dataframe keyed on the date and a column with an EMA value.
         """
+        # TODO Make a closing-price variant (Not just gain/loss)
         df = self.get_interday_gain_loss()
         df[f'ema_{period}dy'] = df['interday_gain_loss'].ewm(span=period).mean()
         df[f'ema_{period}dy_pct'] = df['interday_gain_loss_pct'].ewm(span=period).mean()
         df.drop(columns=[c for c in df.columns.values if 'interday_' in c], inplace=True)
         return df
 
-    def get_bollinger_bands(self, period=20, stddev_factor=1, method='SMA'):
+    def get_bollinger_bands(self, period=20, stddev_factor=1):
         """
         Calculates an upper and lower Bollinger Band. It uses either an SMA or an EMA, and adds/subtracts a windowed
         standard deviation from it.
@@ -105,22 +121,16 @@ class Security:
         Param method: Use SMA or EMA weightings
         Returns: A dataframe keyed on the date and columns for an upper and lower Bollinger Band.
         """
-        method = method.lower()
-        if method == 'sma':
-            to_merge = self.get_sma(period)
-        elif method == 'ema':
-            to_merge = self.get_ema(period)
-        else:
-            raise ValueError("Invalid method! Use SMA or EMA.")
+        to_merge = self.get_sma_price(period)
         df = self.data[['date', 'close']].copy().merge(to_merge, on='date')
-        df[f'std_close_{period}dy'] = df['close'].rolling(window=period, min_periods=1).std()
+        df[f'std_{period}dy'] = df['close'].rolling(window=period, min_periods=1).std()
 
-        df[f'bollinger_upper_{method.lower()}_{period}dy_{stddev_factor}std'] = \
-            stddev_factor * df[f'std_close_{period}dy'] + df[f'{method}_close_{period}dy']
-        df[f'bollinger_lower_{method.lower()}_{period}dy_{stddev_factor}std'] = \
-            stddev_factor * df[f'std_close_{period}dy'] - df[f'{method}_close_{period}dy']
+        df[f'bollinger_upper_{period}dy_{stddev_factor}std'] = \
+            stddev_factor * df[f'std_{period}dy'] + df[f'sma_price_{period}dy']
+        df[f'bollinger_lower_{period}dy_{stddev_factor}std'] = \
+            df[f'sma_price_{period}dy']- stddev_factor * df[f'std_{period}dy']
 
-        df.drop(columns=['close', f'std_close_{period}dy', f'sma_close_{period}dy'], inplace=True)
+        df.drop(columns=['close', f'std_{period}dy', f'sma_price_{period}dy'], inplace=True)
         return df
 
     def get_rsi(self, period=20):
@@ -131,10 +141,10 @@ class Security:
         Returns: A dataframe keyed on the date and an RSI column
         """
         df = self.get_interday_gain_loss()
-        df[['sma_gain', 'sma_loss']] = df[['interday_gain_close', 'interday_loss_close']]\
+        df[['sma_gain', 'sma_loss']] = df[['interday_gain', 'interday_loss']]\
             .rolling(window=period, min_periods=1).mean()
         df[f'rsi_{period}dy'] = 100 - (100 / (1 + df[f'sma_gain'] / df[f'sma_loss']))
-        df.drop(columns=['interday_gain_close', 'interday_loss_close', 'interday_gain_loss', 'sma_gain', 'sma_loss'],
+        df.drop(columns=['interday_gain', 'interday_loss', 'interday_gain_loss', 'sma_gain', 'sma_loss'],
                 inplace=True)
         return df
 
@@ -176,8 +186,8 @@ class Security:
         # Format the data: Rename Columns, and store in a records-based format
         try:
             time_series = data['Time Series (Daily)']
-        except KeyError:
-            logger.error("Rejected API call due to AlphaVantage rate-limiting.")
+        except KeyError as e:
+            logger.error(f"Rejected API call due to AlphaVantage rate-limiting: {data}")
             return 0
 
         df = pd.DataFrame.from_dict(time_series, orient='index').reset_index()
@@ -224,8 +234,8 @@ class Security:
             logger.warning("Too many securities for API Request. Truncating to 500 oldest-updated reports")
             updated = []
             for symbol in securities:
-                if os.path.exists(os.path.join(STOCK_DIR, f'{symbol}.json')):
-                    with open(os.path.join(STOCK_DIR, f'{symbol}.json')) as f:
+                if os.path.exists(os.path.join(Security.STOCK_DIR, f'{symbol}.json')):
+                    with open(os.path.join(Security.STOCK_DIR, f'{symbol}.json')) as f:
                         updated.append({"symbol": symbol, "updated_at": json.load(f)[-1]['date']})
                 else:
                     updated.append({"symbol": symbol, "updated_at": '1970-01-01'})
@@ -297,7 +307,10 @@ def get_sec_tickers():
 
 def get_sp500_tickers():
     """Get list of S&P500 index from Wikipedia. (As of 6/30/20)"""
-    return sorted(pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")[0]['Symbol'].tolist())
+    tickers = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")[0]['Symbol'].tolist()
+    tickers.remove('BF.B')
+    tickers.append('BFB')
+    return sorted(tickers)
 
 
 if __name__ == '__main__':

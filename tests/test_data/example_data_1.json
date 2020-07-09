@@ -8,6 +8,7 @@
     "interday_gain_loss": 0.00,
     "interday_gain_loss_pct": 0.00,
     "sma_5dy_pct": 0.00,
+    "sma_price_5dy": 12.00,
     "ema_5dy": 0.00
   },
   {
@@ -18,7 +19,8 @@
     "intraday_gain_loss_pct": 25.000,
     "interday_gain_loss": 3.00,
     "interday_gain_loss_pct": 25.000,
-    "sma_5dy_pct": 0.00,
+    "sma_5dy_pct": 12.50,
+    "sma_price_5dy": 13.50,
     "ema_5dy": 0.00
   },
   {
@@ -29,7 +31,8 @@
     "intraday_gain_loss_pct": -22.222,
     "interday_gain_loss": -1.00,
     "interday_gain_loss_pct": -6.667,
-    "sma_5dy_pct": 0.00,
+    "sma_5dy_pct": 6.111,
+    "sma_price_5dy": 13.667,
     "ema_5dy": 0.00
   },
   {
@@ -40,7 +43,8 @@
     "intraday_gain_loss_pct": 30.769,
     "interday_gain_loss": 3.00,
     "interday_gain_loss_pct": 21.429,
-    "sma_5dy_pct": 0.00,
+    "sma_5dy_pct": 9.940,
+    "sma_price_5dy": 14.50,
     "ema_5dy": 0.00
   },
   {
@@ -51,7 +55,8 @@
     "intraday_gain_loss_pct": -41.176,
     "interday_gain_loss": -7.00,
     "interday_gain_loss_pct": -41.176,
-    "sma_5dy_pct": 0.00,
+    "sma_5dy_pct": -0.283,
+    "sma_price_5dy": 13.60,
     "ema_5dy": 0.00
   },
   {
@@ -62,7 +67,8 @@
     "intraday_gain_loss_pct": 10.00,
     "interday_gain_loss": 1.00,
     "interday_gain_loss_pct": 10.00,
-    "sma_5dy_pct": 0.000,
+    "sma_5dy_pct": 1.717,
+    "sma_price_5dy": 13.40,
     "ema_5dy": 0.00
   },
   {
@@ -73,7 +79,8 @@
     "intraday_gain_loss_pct": 27.273,
     "interday_gain_loss": 3.00,
     "interday_gain_loss_pct": 27.273,
-    "sma_5dy_pct": 0.00,
+    "sma_5dy_pct": 2.172,
+    "sma_price_5dy": 13.20,
     "ema_5dy": 0.00
   },
   {
@@ -84,7 +91,8 @@
     "intraday_gain_loss_pct": 28.571,
     "interday_gain_loss": 4.00,
     "interday_gain_loss_pct": 28.571,
-    "sma_5dy_pct": 0.00,
+    "sma_5dy_pct": 9.219,
+    "sma_price_5dy": 14.00,
     "ema_5dy": 0.00
   },
   {
@@ -95,7 +103,8 @@
     "intraday_gain_loss_pct": 5.556,
     "interday_gain_loss": 1.00,
     "interday_gain_loss_pct": 5.556,
-    "sma_5dy_pct": 0.00,
+    "sma_5dy_pct": 6.045,
+    "sma_price_5dy": 14.40,
     "ema_5dy": 0.00
   },
   {
@@ -106,7 +115,8 @@
     "intraday_gain_loss_pct": 5.263,
     "interday_gain_loss": 1.00,
     "interday_gain_loss_pct": 5.263,
-    "sma_5dy_pct": 0.00,
+    "sma_5dy_pct": 15.333,
+    "sma_price_5dy": 16.40,
     "ema_5dy": 0.00
   }
 ]
