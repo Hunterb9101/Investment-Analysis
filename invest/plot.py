@@ -19,7 +19,7 @@ class Plot:
             raise LookupError(f"No plot exists with name {plot_name}")
 
     @staticmethod
-    def plot_rsi(security: Security, rsi_period=20, date_range=None):
+    def plot_rsi(security: Security, rsi_period=14, date_range=None):
         temp_df = security.data.copy()
         temp_df = pd.merge(security.get_rsi(rsi_period), temp_df, on='date')
 
@@ -77,7 +77,7 @@ class Plot:
         return fig
 
     @staticmethod
-    def plot_general(security: Security, bollinger_period=20, bollinger_stddev_factor=1, date_range=None):
+    def plot_general(security: Security, bollinger_period=20, bollinger_stddev_factor=2, date_range=None):
         temp_df = security.data.copy()
         temp_df = pd.merge(security.get_bollinger_bands(period=bollinger_period, stddev_factor=bollinger_stddev_factor),
                            temp_df, on='date')

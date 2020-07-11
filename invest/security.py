@@ -47,12 +47,13 @@ class Security:
         df['interday_loss'] = -1 * df['interday_gain_loss'].where(df['interday_gain_loss'] < 0)
         df[['interday_gain', 'interday_loss']] = df[['interday_gain', 'interday_loss']].fillna(0.00)
 
-        df['interday_gain_loss_pct'] = ((df['close'] - df['close'].shift(1))/df['close'].shift(1)) * 100
+        df['interday_gain_loss_pct'] = ((df['close'] - df['close'].shift(1)) / df['close'].shift(1)) * 100
         df['interday_gain_pct'] = df['interday_gain_loss_pct'].where(df['interday_gain_loss_pct'] > 0)
         df['interday_loss_pct'] = -1 * df['interday_gain_loss_pct'].where(df['interday_gain_loss_pct'] < 0)
         df[['interday_gain_pct', 'interday_loss_pct']] = df[['interday_gain_pct', 'interday_loss_pct']].fillna(0.00)
         df[['interday_gain_loss_pct', 'interday_gain_pct',
-            'interday_loss_pct']] = df[['interday_gain_loss_pct', 'interday_gain_pct', 'interday_loss_pct']].fillna(0.00)
+            'interday_loss_pct']] = df[['interday_gain_loss_pct', 'interday_gain_pct', 'interday_loss_pct']].fillna(
+            0.00)
         df.drop(columns=['close'], inplace=True)
         return df
 
@@ -141,11 +142,30 @@ class Security:
         Returns: A dataframe keyed on the date and an RSI column
         """
         df = self.get_interday_gain_loss()
-        df[['sma_gain', 'sma_loss']] = df[['interday_gain', 'interday_loss']]\
+        df[['sma_gain', 'sma_loss']] = df[['interday_gain', 'interday_loss']] \
             .rolling(window=period, min_periods=1).mean()
         df[f'rsi_{period}dy'] = 100 - (100 / (1 + df[f'sma_gain'] / df[f'sma_loss']))
         df.drop(columns=['interday_gain', 'interday_loss', 'interday_gain_loss', 'sma_gain', 'sma_loss'],
                 inplace=True)
+        return df
+
+    def signals_rsi_bollinger(self, bollinger_period=20, rsi_period=14, stddev_factor=1):
+        try:
+            df = self.data.copy()
+        except AttributeError:
+            print(f"No cache to load for {self.symbol}. Returning None")
+            return None
+        df = pd.merge(self.get_bollinger_bands(period=bollinger_period, stddev_factor=stddev_factor), df,
+                      on='date')
+        df = pd.merge(self.get_rsi(rsi_period), df, on='date')
+        df = pd.merge(self.get_sma_price(bollinger_period), df, on='date')
+
+        df['signal'] = 'NO-SIGNAL'
+        df.loc[(df[f'rsi_{rsi_period}dy'] > 70) & (
+                df[f'bollinger_upper_{bollinger_period}dy_{stddev_factor}std'] < df['close']), 'signal'] = 'OVER-BOUGHT'
+        df.loc[(df[f'rsi_{rsi_period}dy'] < 30) & (
+                df[f'bollinger_lower_{bollinger_period}dy_{stddev_factor}std'] > df['close']), 'signal'] = \
+            'UNDER-BOUGHT'
         return df
 
     def update(self, force_full_output=False):
@@ -197,13 +217,6 @@ class Security:
                      '5. volume': 'volume'}, inplace=True)
         df = df.astype({'open': float, 'high': float, 'low': float, 'close': float, 'volume': np.int64})
         df.sort_values('date', ascending=True, inplace=True)
-
-        # TODO: Move SMA/EMA/Bollinger Bands/RSI calculations downstream
-        # df = df.merge(self.get_intraday_gain_loss(), on='date')
-        # for period in [10, 20, 50]:
-        #     df = df.merge(self.get_sma(period), on='date')
-        #     df = df.merge(self.get_bollinger_bands(period), on='date')
-        #     df = df.merge(self.get_rsi(period), on='date')
 
         if output_switch == 'full':
             self.data = df.to_dict(orient='records')

@@ -11,17 +11,25 @@ logger = logging.getLogger("main")
 class WatchList:
     watchlist_dir = 'watchlists/'
 
-    def __init__(self, name, security_list):
+    def __init__(self, name, security_list=None):
         self.file = os.path.join(WatchList.watchlist_dir, f'{name}.json')
+        empty = True
         if os.path.exists(self.file):
             with open(self.file) as f:
                 self._watchlist = json.load(f)
+                logger.info(f"Loading watchlist {name}")
+                empty = False
         else:
             self._watchlist = {}
 
-        for symbol in security_list:
-            if symbol not in self._watchlist.keys():
-                self.add(symbol)
+        if security_list is not None:
+            for symbol in security_list:
+                if symbol not in self._watchlist.keys():
+                    self.add(symbol)
+
+        if empty and security_list is None:
+            logger.error(f"Attempting to create an empty watchlist {name}!")
+            raise ValueError(f"Attempting to create an empty watchlist {name}!")
 
     def _save(self):
         with open(self.file, 'w+') as f:
@@ -79,6 +87,23 @@ class WatchList:
                 if request == 0:
                     logger.info("Waiting 12 seconds...")
                     time.sleep(12)
+
+    def rsi_bollinger_report(self):
+        df = pd.DataFrame()
+        for w in self.list():
+            df_signals = Security(w).signals_rsi_bollinger()
+            if df_signals is None:
+                continue
+            row = {'security': w,
+                   'last_date_overbought': df_signals[df_signals['signal'] == 'OVER-BOUGHT']['date'].max(),
+                   'last_date_underbought': df_signals[df_signals['signal'] == 'UNDER-BOUGHT']['date'].max(),
+                   'current_sma_price': df_signals[df_signals['date'].max() == df_signals['date']]
+                   ['sma_price_20dy'].tolist()[0],
+                   'current_price': df_signals[df_signals['date'].max() == df_signals['date']]['close'].tolist()[0],
+                   'last_updated': df_signals['date'].max()}
+            df_new = pd.DataFrame.from_dict([row])
+            df = pd.concat([df, df_new])
+        return df.reset_index(drop=True)
 
 
 def get_sec_tickers():

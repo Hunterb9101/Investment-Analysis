@@ -42,7 +42,6 @@ class TestMetrics:
         assert_frame_equal(pd.DataFrame(s.data['sma_price_5dy'], dtype='float64'), pd.DataFrame(sma['sma_price_5dy']),
                            check_dtype=False)
 
-
     def test_ema(self):
         pass
 
